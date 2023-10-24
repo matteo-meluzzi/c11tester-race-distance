@@ -216,7 +216,7 @@ void assert_race(struct DataRace *race)
 	backtrace_symbols_fd(race->backtrace, race->numframes, model_out);
 	model_print("\nData race detected @ address %p:\n"
 							"    Access 1: %5s in thread %2d @ clock %3u\n"
-							"    Access 2: %5s in thread %2d @ clock %3u\n\n",
+							"    Access 2: %5s in thread %2d @ clock %3u\n",
 							race->address,
 							race->isoldwrite ? "write" : "read",
 							id_to_int(race->oldthread),
@@ -227,11 +227,39 @@ void assert_race(struct DataRace *race)
 							);
 
 	auto exe = get_execution();
-	auto action1 = exe->get_last_action(race->oldthread);
+	// auto old_thread = exe->get_thread(race->oldthread);
+	ModelAction *action1 = nullptr;
+	for (auto a = exe->get_action_trace()->begin(); a != nullptr; a = a->getNext()) {
+		if (a->getVal()->get_seq_number() == race->oldclock) {
+			action1 = a->getVal();
+		}
+	}
+	ASSERT(action1 != nullptr);
+	
 	auto action2 = race->newaction;
 	auto dist = exe->relations_graph.minDistanceBetween(action1, action2);
+	model_print("minimum distance between %d (%s) and %d (%s): %d\n\n", action1->get_seq_number(), pretty_node_type(action1).c_str(), action2->get_seq_number(), pretty_node_type(action2).c_str(), dist);
+
+	constexpr auto k = 10;
+	model_print("all paths with distance less than %d:\n", k);
+	auto paths = exe->relations_graph.allPathsShorterThan(action1, action2, k);
+	auto i = 0;
+	for (auto path : paths) {
+		model_print("PATH %d: ", ++i);
+		for (auto path_comp : path) {
+			auto node = path_comp.node;
+			auto edge_type = path_comp.edge_type;
+
+			if (path_comp.node == path.front().node)
+				model_print("%d ", node->get_seq_number(), node);
+			else
+				model_print("(%s ->) %d ", pretty_edge_type(edge_type), node->get_seq_number());
+		}
+		model_print("\n");
+	}
+	model_print("\n");
+
 	exe->relations_graph.pretty_print();
-	model_print("minimum distance between %d and %d: %d\n", action1->get_seq_number(), action2->get_seq_number(), dist);
 }
 
 /** This function does race detection for a write on an expanded record. */

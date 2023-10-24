@@ -80,22 +80,26 @@ int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelActio
  * they are needed to avoid cycling indefinetely
  * all the paths shorter than k are stored in 'result' (passed by reference)
  */
-void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from, 
+void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from,
                                                 const RelationsGraphNode *to, 
                                                 size_t k, 
                                                 std::vector<RelationsGraphPath> &result, 
+                                                RelationGraphEdgeType followed_edge_type,
                                                 std::unordered_set<const RelationsGraphNode *> visited, 
-                                                std::vector<const RelationsGraphNode *> current_path) const {
+                                                std::vector<RelationsGraphPathComponent> current_path) const {
+    model_print("visiting node %d, current path size: %d\n", from->get_seq_number(), current_path.size());
     if (from == to) {
+        current_path.push_back({from, followed_edge_type});
         result.push_back(current_path);
         return;
     }
 
-    if (current_path.size() == k)
+    if (current_path.size() == k) {
         return;
+    }
 
     visited.insert(from);
-    current_path.push_back(from);
+    current_path.push_back({from, followed_edge_type});
 
     if (node_to_edges.count(from) == 0) 
         return;
@@ -103,7 +107,7 @@ void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from,
     for (size_t n_index = 0; n_index < from_edges.size(); n_index++) {
         auto v = from_edges[n_index].to_node;
         if (visited.count(v) == 0)
-            allPathsShorterThanHelper(v, to, k, result, visited, current_path);
+            allPathsShorterThanHelper(v, to, k, result, from_edges[n_index].type, visited, current_path);
     }
 }
 
@@ -111,13 +115,13 @@ void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from,
 vector<RelationsGraphPath> RelationsGraph::allPathsShorterThan(const ModelAction *from, const ModelAction *to, int k) const {
     vector<RelationsGraphPath> xs;
     
-    allPathsShorterThanHelper(from, to, k, xs);
+    allPathsShorterThanHelper(from, to, k, xs, static_cast<RelationGraphEdgeType>(-1));
 
     return xs;
 }
 
-const char * pretty_edge_type(const RelationGraphEdge &e) {
-    switch (e.type)
+const char * pretty_edge_type(const RelationGraphEdgeType type) {
+    switch (type)
     {
     case READ_FROM:
         return "READ_FROM";
@@ -129,6 +133,11 @@ const char * pretty_edge_type(const RelationGraphEdge &e) {
         return "UNKNOWN_EDGE_TYPE";
     }
 }
+
+const char * pretty_edge_type(const RelationGraphEdge &e) {
+    return pretty_edge_type(e.type);
+}
+
 
 string pretty_node_type(const RelationsGraphNode *n) {
     switch (n->get_type()) 
@@ -147,18 +156,21 @@ string pretty_node_type(const RelationsGraphNode *n) {
             return "THREAD_JOIN";
         case THREAD_START:
             return "THREAD_START";
+        case THREAD_FINISH:
+            return "THREAD_FINISH";
         default:
             return "ANOTHER_TYPE: " + to_string(n->get_type());
     }
 }
 
 void RelationsGraph::pretty_print() {
+    model_print("RELATIONS GRAPH of size %d:\n", node_to_edges.size());
     for (auto node_edges : node_to_edges) {
         auto node = node_edges.first;
         auto edges = node_edges.second;
-        model_print("node %s with seq num %d:\n", pretty_node_type(node).c_str(), node->get_seq_number());
+        model_print("node with seq num %d (%s):\n", node->get_seq_number(), pretty_node_type(node).c_str());
         for (auto e : edges) {
-            model_print("\t %s -> %d\n", pretty_edge_type(e), e.to_node->get_seq_number());
+            model_print("\t %s -> %d (%s)\n", pretty_edge_type(e), e.to_node->get_seq_number(), pretty_node_type(e.to_node).c_str());
         }
         model_print("\n");
     }
