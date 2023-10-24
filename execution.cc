@@ -832,7 +832,7 @@ bool ModelExecution::check_action_enabled(ModelAction *curr) {
  * curr
  */
 ModelAction * ModelExecution::check_current_action(ModelAction *curr)
-{
+{	
 	ASSERT(curr);
 	bool newly_explored = initialize_curr_action(&curr);
 
@@ -840,12 +840,20 @@ ModelAction * ModelExecution::check_current_action(ModelAction *curr)
 
 	wake_up_sleeping_actions();
 
+	model_print("check_current_action: %d\n", curr->get_seq_number());
+
 	SnapVector<ModelAction *> * rf_set = NULL;
 	bool canprune = false;
 	/* Build may_read_from set for newly-created actions */
 	if (curr->is_read() && newly_explored) {
 		rf_set = build_may_read_from(curr);
 		canprune = process_read(curr, rf_set);
+
+		// RELATIONS_GRAPH: add READ_FROM edges
+		for (size_t i = 0; i < rf_set->size(); i++) {
+			auto action_read_from = rf_set->at(i);
+			relations_graph.addEdge(action_read_from, RelationGraphEdge(READ_FROM, curr));
+		}
 		delete rf_set;
 	} else
 		ASSERT(rf_set == NULL);
@@ -871,6 +879,28 @@ ModelAction * ModelExecution::check_current_action(ModelAction *curr)
 
 	if (curr->is_mutex_op())
 		process_mutex(curr);
+
+	// RELATIONS_GRAPH: add HAPPENS_BEFORE and SEQUENTIAL_CONSISTENCY edges considering the last action of all spawned threads
+	auto add_hb_sq_edges_to_relations_graph = [&](const SnapVector<Thread *> &threads) {
+		for (size_t i = 0; i < threads.size(); i++) {
+			auto thread = threads.at(i);
+			auto last_action = get_last_action(thread->get_id());
+			if (last_action == curr)
+				continue;
+			if (last_action == nullptr) {
+				continue;
+			}
+
+			if (last_action->happens_before(curr)) {
+				relations_graph.addEdge(last_action, RelationGraphEdge(HAPPENS_BEFORE, curr));
+			}
+			if (curr->is_seqcst() && last_action->is_seqcst()) {
+				relations_graph.addEdge(last_action, RelationGraphEdge(SEQUENTIAL_CONSISTENCY, curr));
+			}
+		}
+	};
+	add_hb_sq_edges_to_relations_graph(thread_map);
+	add_hb_sq_edges_to_relations_graph(pthread_map);
 
 	return curr;
 }

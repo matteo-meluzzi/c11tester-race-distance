@@ -1,5 +1,6 @@
 #include "relationsgraph.h"
 #include <queue>
+#include "action.h"
 
 using namespace std;
 
@@ -11,6 +12,16 @@ void RelationsGraph::addEdge(const ModelAction *from_node, const RelationGraphEd
 
 int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelAction *to) const {
     unordered_map<const RelationsGraphNode *, int> distances_table;
+    distances_table[from] = 0;
+
+    ASSERT(node_to_edges.count(from) > 0);
+
+    // model_print("%p to %p\n", from, to);
+
+    // model_print("edges of from_node:\n");
+    // for (auto e : node_to_edges.at(from)) {
+    //     model_print("edge to %d %p\n", e.to_node->get_seq_number(), e.to_node);
+    // }
     
     priority_queue<PairDistNode, vector<PairDistNode>, greater<PairDistNode>> pq; // min-heap
     pq.push({0, from});
@@ -20,31 +31,45 @@ int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelActio
         auto dist_u = top.first;
         auto u = top.second;
 
+        // model_print("enumerating node %d\n", u->get_seq_number());
+
         pq.pop();
 
-        if (distances_table.count(u) == 0)
+        if (distances_table.count(u) == 0) {
+            // model_print("distances table does not contain %d\n", u->get_seq_number());
             distances_table[u] = numeric_limits<int>::max();
+        }
         
-        if (u == to)
+        if (u == to) {
+            // model_print("relations_graph: found a path with distance %d\n", dist_u);
             return dist_u; // minimal distance found
+        }
         
-        if (dist_u > distances_table[u])
+        if (dist_u > distances_table[u]) {
+            // model_print("current distance (%d) greater than distances_table[u] (%d)\n", dist_u, distances_table[u]);
             continue; // skip because this is not the shortest path to u
+        }
         
-        if (node_to_edges.count(u) == 0)
+        if (node_to_edges.count(u) == 0) {
+            // model_print("relations_graph: reached a node with no edges\n");
             continue;
+        }
         auto u_edges = node_to_edges.at(u);
+        // model_print("u has %d edges\n", u_edges.size());
         for (size_t n_index = 0; n_index < u_edges.size(); n_index++) {
             auto v = u_edges[n_index].to_node;
 
             int new_dist = dist_u + 1;
-            if (new_dist < distances_table[v]) {
+            if (distances_table.count(v) == 0) 
+                distances_table[v] = numeric_limits<int>::max();
+            if (new_dist < distances_table.at(v)) {
+                // model_print("added node %d to pq\n", v->get_seq_number());
                 distances_table[v] = new_dist;
                 pq.push({new_dist, v});
             }
         }
     }
-
+    // model_print("relations_graph: could not find a path\n");
     return -1; // no path between them was found
 }
 
@@ -89,4 +114,52 @@ vector<RelationsGraphPath> RelationsGraph::allPathsShorterThan(const ModelAction
     allPathsShorterThanHelper(from, to, k, xs);
 
     return xs;
+}
+
+const char * pretty_edge_type(const RelationGraphEdge &e) {
+    switch (e.type)
+    {
+    case READ_FROM:
+        return "READ_FROM";
+    case HAPPENS_BEFORE:
+        return "HAPPENS_BEFORE";
+    case SEQUENTIAL_CONSISTENCY:
+        return "SEQUENTIAL_CONSISTENCY";
+    default:
+        return "UNKNOWN_EDGE_TYPE";
+    }
+}
+
+string pretty_node_type(const RelationsGraphNode *n) {
+    switch (n->get_type()) 
+    {
+        case ATOMIC_INIT:
+            return "ATOMIC_INIT";
+        case ATOMIC_WRITE:
+            return "ATOMIC_WRITE";
+        case ATOMIC_READ:
+            return "ATOMIC_READ";
+        case NONATOMIC_WRITE:
+            return "NONATOMIC_WRITE";
+        case THREAD_CREATE:
+            return "THREAD_CREATE";
+        case THREAD_JOIN:
+            return "THREAD_JOIN";
+        case THREAD_START:
+            return "THREAD_START";
+        default:
+            return "ANOTHER_TYPE: " + to_string(n->get_type());
+    }
+}
+
+void RelationsGraph::pretty_print() {
+    for (auto node_edges : node_to_edges) {
+        auto node = node_edges.first;
+        auto edges = node_edges.second;
+        model_print("node %s with seq num %d:\n", pretty_node_type(node).c_str(), node->get_seq_number());
+        for (auto e : edges) {
+            model_print("\t %s -> %d\n", pretty_edge_type(e), e.to_node->get_seq_number());
+        }
+        model_print("\n");
+    }
 }

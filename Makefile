@@ -47,7 +47,7 @@ futex.o: futex.cc
 
 
 $(LIB_SO): $(OBJECTS)
-	$(CXX) $(SHARED) -o $(LIB_SO) $+ $(LDFLAGS)
+	$(CXX) $(SHARED) -g -o $(LIB_SO) $+ $(LDFLAGS)
 
 %.pdf: %.dot
 	dot -Tpdf $< -o $@

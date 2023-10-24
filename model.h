@@ -40,7 +40,7 @@ public:
 	/** Exit the model checker, intended for pluggins. */
 	void exit_model_checker();
 
-	ModelExecution * get_execution() const { return execution; }
+	ModelExecution * get_execution() { return execution; }
 
 	int get_execution_number() const { return execution_number; }
 

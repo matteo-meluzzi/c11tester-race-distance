@@ -29,7 +29,7 @@ static unsigned int load32_count = 0;
 static unsigned int load64_count = 0;
 #endif
 
-static const ModelExecution * get_execution()
+static ModelExecution * get_execution()
 {
 	return model->get_execution();
 }
@@ -230,7 +230,8 @@ void assert_race(struct DataRace *race)
 	auto action1 = exe->get_last_action(race->oldthread);
 	auto action2 = race->newaction;
 	auto dist = exe->relations_graph.minDistanceBetween(action1, action2);
-	model_print("\nDistance between racy accesses: %d", dist);
+	exe->relations_graph.pretty_print();
+	model_print("minimum distance between %d and %d: %d\n", action1->get_seq_number(), action2->get_seq_number(), dist);
 }
 
 /** This function does race detection for a write on an expanded record. */

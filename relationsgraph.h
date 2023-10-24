@@ -3,8 +3,9 @@
 
 #include <unordered_map>
 #include <vector>
-#include "action.h"
 #include <unordered_set>
+
+class ModelAction;
 
 using RelationsGraphNode = ModelAction;
 using RelationsGraphPath = std::vector<const RelationsGraphNode *>;
@@ -18,6 +19,8 @@ typedef enum {
 struct RelationGraphEdge {
     RelationGraphEdgeType type;
     RelationsGraphNode *to_node;
+
+    RelationGraphEdge(RelationGraphEdgeType type, RelationsGraphNode *to_node) : type(type), to_node(to_node) {}
 };
 
 class RelationsGraph {
@@ -26,6 +29,8 @@ public:
 
     int minDistanceBetween(const ModelAction *from, const ModelAction *to) const;
     std::vector<RelationsGraphPath> allPathsShorterThan(const ModelAction *from, const ModelAction *to, int k) const;
+
+    void pretty_print();
 private:
     std::unordered_map<const RelationsGraphNode *, std::vector<RelationGraphEdge>> node_to_edges; 
 
