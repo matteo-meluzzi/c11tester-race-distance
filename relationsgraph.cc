@@ -9,7 +9,7 @@ void RelationsGraph::addEdge(const ModelAction *from_node, const RelationGraphEd
     node_to_edges[from_node].push_back(edge);
 }
 
-int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelAction *to) {
+int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelAction *to) const {
     unordered_map<const RelationsGraphNode *, int> distances_table;
     
     priority_queue<PairDistNode, vector<PairDistNode>, greater<PairDistNode>> pq; // min-heap
@@ -31,8 +31,10 @@ int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelActio
         if (dist_u > distances_table[u])
             continue; // skip because this is not the shortest path to u
         
-        auto u_edges = node_to_edges[u];
-        for (auto n_index = 0; n_index < u_edges.size(); n_index++) {
+        if (node_to_edges.count(u) == 0)
+            continue;
+        auto u_edges = node_to_edges.at(u);
+        for (size_t n_index = 0; n_index < u_edges.size(); n_index++) {
             auto v = u_edges[n_index].to_node;
 
             int new_dist = dist_u + 1;
@@ -42,6 +44,8 @@ int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelActio
             }
         }
     }
+
+    return -1; // no path between them was found
 }
 
 /*
@@ -53,10 +57,10 @@ int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelActio
  */
 void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from, 
                                                 const RelationsGraphNode *to, 
-                                                int k, 
+                                                size_t k, 
                                                 std::vector<RelationsGraphPath> &result, 
                                                 std::unordered_set<const RelationsGraphNode *> visited, 
-                                                std::vector<const RelationsGraphNode *> current_path) {
+                                                std::vector<const RelationsGraphNode *> current_path) const {
     if (from == to) {
         result.push_back(current_path);
         return;
@@ -68,8 +72,10 @@ void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from,
     visited.insert(from);
     current_path.push_back(from);
 
-    auto from_edges = node_to_edges[from];
-    for (auto n_index = 0; n_index < from_edges.size(); n_index++) {
+    if (node_to_edges.count(from) == 0) 
+        return;
+    auto from_edges = node_to_edges.at(from);
+    for (size_t n_index = 0; n_index < from_edges.size(); n_index++) {
         auto v = from_edges[n_index].to_node;
         if (visited.count(v) == 0)
             allPathsShorterThanHelper(v, to, k, result, visited, current_path);
@@ -77,7 +83,7 @@ void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from,
 }
 
 
-vector<RelationsGraphPath> RelationsGraph::allPathsShorterThan(const ModelAction *from, const ModelAction *to, int k) {
+vector<RelationsGraphPath> RelationsGraph::allPathsShorterThan(const ModelAction *from, const ModelAction *to, int k) const {
     vector<RelationsGraphPath> xs;
     
     allPathsShorterThanHelper(from, to, k, xs);

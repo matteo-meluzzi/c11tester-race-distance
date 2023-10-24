@@ -10,6 +10,7 @@
 #include "execution.h"
 #include "stl-model.h"
 #include <execinfo.h>
+#include "relationsgraph.h"
 
 static struct ShadowTable *root;
 static void *memory_base;
@@ -224,6 +225,12 @@ void assert_race(struct DataRace *race)
 							id_to_int(race->newaction->get_tid()),
 							race->newaction->get_seq_number()
 							);
+
+	auto exe = get_execution();
+	auto action1 = exe->get_last_action(race->oldthread);
+	auto action2 = race->newaction;
+	auto dist = exe->relations_graph.minDistanceBetween(action1, action2);
+	model_print("\nDistance between racy accesses: %d", dist);
 }
 
 /** This function does race detection for a write on an expanded record. */

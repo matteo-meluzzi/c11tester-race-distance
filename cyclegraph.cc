@@ -226,13 +226,13 @@ static void print_edge(FILE *file, const CycleNode *from, const CycleNode *to, c
 
 void CycleGraph::dot_print_node(FILE *file, const ModelAction *act)
 {
-	print_node(file, getNode(act), 1);
+	print_node(file, getNode(const_cast<ModelAction *>(act)), 1);
 }
 
 void CycleGraph::dot_print_edge(FILE *file, const ModelAction *from, const ModelAction *to, const char *prop)
 {
-	CycleNode *fromnode = getNode(from);
-	CycleNode *tonode = getNode(to);
+	CycleNode *fromnode = getNode(const_cast<ModelAction *>(from));
+	CycleNode *tonode = getNode(const_cast<ModelAction *>(to));
 
 	print_edge(file, fromnode, tonode, prop);
 }

@@ -18,6 +18,7 @@
 #include "mutex.h"
 #include <condition_variable>
 #include "classlist.h"
+#include "relationsgraph.h"
 
 #define INITIAL_THREAD_ID	0
 #define MAIN_THREAD_ID		1
@@ -39,6 +40,8 @@ class ModelExecution {
 public:
 	ModelExecution(ModelChecker *m, Scheduler *scheduler);
 	~ModelExecution();
+
+	RelationsGraph relations_graph;
 
 	struct model_params * get_params() const { return params; }
 	void setParams(struct model_params * _params) {params = _params;}

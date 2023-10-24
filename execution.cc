@@ -16,6 +16,8 @@
 #include "bugmessage.h"
 #include "fuzzer.h"
 
+#include "relationsgraph.h"
+
 #ifdef COLLECT_STAT
 static unsigned int atomic_load_count = 0;
 static unsigned int atomic_store_count = 0;
