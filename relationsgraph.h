@@ -6,12 +6,8 @@
 #include "action.h"
 #include <unordered_set>
 
-// struct RelationGraphNode {
-//     ModelAction *action;
-// };
-
 using RelationsGraphNode = ModelAction;
-using RelationsGraphPath = std::vector<RelationsGraphNode *>;
+using RelationsGraphPath = std::vector<const RelationsGraphNode *>;
 
 typedef enum {
     READ_FROM,
@@ -33,12 +29,12 @@ public:
 private:
     std::unordered_map<const RelationsGraphNode *, std::vector<RelationGraphEdge>> node_to_edges; 
 
-    void allPathsShorterThanHelper(RelationsGraphNode *from, 
-                                   RelationsGraphNode *to, 
+    void allPathsShorterThanHelper(const RelationsGraphNode *from, 
+                                   const RelationsGraphNode *to, 
                                    int k, 
                                    std::vector<RelationsGraphPath> &result, 
-                                   std::unordered_set<RelationsGraphNode *> visited = std::unordered_set<RelationsGraphNode *>(), 
-                                   std::vector<RelationsGraphNode *> current_path = std::vector<RelationsGraphNode *>());
+                                   std::unordered_set<const RelationsGraphNode *> visited = std::unordered_set<const RelationsGraphNode *>(), 
+                                   std::vector<const RelationsGraphNode *> current_path = std::vector<const RelationsGraphNode *>());
 };
 
 #endif

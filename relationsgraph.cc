@@ -51,12 +51,12 @@ int RelationsGraph::minDistanceBetween(const ModelAction *from, const ModelActio
  * they are needed to avoid cycling indefinetely
  * all the paths shorter than k are stored in 'result' (passed by reference)
  */
-void RelationsGraph::allPathsShorterThanHelper(RelationsGraphNode *from, 
-                                                RelationsGraphNode *to, 
+void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from, 
+                                                const RelationsGraphNode *to, 
                                                 int k, 
                                                 std::vector<RelationsGraphPath> &result, 
-                                                std::unordered_set<RelationsGraphNode *> visited, 
-                                                std::vector<RelationsGraphNode *> current_path) {
+                                                std::unordered_set<const RelationsGraphNode *> visited, 
+                                                std::vector<const RelationsGraphNode *> current_path) {
     if (from == to) {
         result.push_back(current_path);
         return;
