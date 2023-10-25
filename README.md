@@ -23,11 +23,11 @@ You can sign up for the C11Tester mailing list at:
 Added Functionality for Seminar Programming Languages CS4130 course, Matteo Meluzzi
 ----------------------------------------------------------------------------------- 
 
-#### Goals of this project:
+### Goals of this project:
 * Compute minimum distance between two racy accesses in (hb + rf + sc) graph
 * Find all paths between two racy accesses with distance shorter than k in (hb + rf + sc) graph 
 
-#### Description of implementation:
+### Description of implementation:
 
 For every execution, C11Tester constructs a (hb + rf + sc) [graph dynamically as the execution unrolls](execution.cc#L834). 
 * a *hb* edge is [added](execution.cc#L891) when an action *happens-before* the current action. This is checked using C11Tester's [clock vectors](clockvector.h).
@@ -41,8 +41,8 @@ When a [racy access is detected](datarace.cc#L213) the [minDistanceBetween](rela
 
 * [allPathsShorterThan](relationsgraph.cc#L83) performs [Depth-First-Search](https://en.wikipedia.org/wiki/Depth-first_search) using recursion while keeping in memory the past visited nodes that will form the output path.
 
-#### Example output
-Program checked by C11Tester:
+### Example output
+##### Program checked by C11Tester:
 ```
 int x = 0;
 int y = 0;
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 	return 0;
 }
 ```
-C11Tester output:
+##### C11Tester output:
 ```
 Data race detected @ address 0000000000601060:
     Access 1: write in thread  2 @ clock   3
@@ -112,8 +112,12 @@ a exiting, x=12
 b exiting, x=12
 ---- END PROGRAM OUTPUT   ----
 ```
-(hb + rf + sc) graph:
+##### (hb + rf + sc) graph:
 ![Test Graph](doc/test-graph.png)
+
+### Running instructions
+
+The installation and running instructions are invaried with respect to the original C11Tester.
 
 Getting Started
 ---------------
