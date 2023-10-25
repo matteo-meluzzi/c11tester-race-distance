@@ -20,6 +20,27 @@ You can sign up for the C11Tester mailing list at:
 <https://groups.google.com/forum/#!forum/c11tester>
 
 
+Added Functionality for Seminar Programming Languages CS4130 course, Matteo Meluzzi
+----------------------------------------------------------------------------------- 
+
+Goals of this project:
+* Compute minimum distance between two racy accesses in (hb + rf + sc) graph
+* Find all paths between two racy accesses with distance shorter than k in (hb + rf + sc) graph 
+
+Description of implementation:
+
+For every execution, C11Tester constructs a (hb + rf + sc) [graph dynamically as the execution unrolls](execution.cc#L834). 
+* a *hb* edge is [added](execution.cc#L891) when an action *happens-before* the current action. This is checked using C11Tester's [clock vectors](clockvector.h).
+* an *rf* edge is [added](execution.cc#L855) for all actions that the current one *reads-from*.
+* a *sc* edge is [added](execution.cc#L894) when the current action has memory order *memory_order_sequential_consistency* with any past action that has also this memory order.
+
+The (hb + rf + sc) graph implementation can be found in the [relationsgraph.cc](relationsgraph.cc) file.
+When a [racy access is detected](datarace.cc#L213) the [minDistanceBetween](relationsgraph.cc#L13) and [allPathsShorterThan](relationsgraph.cc#L83) functions are called on the graph, and the results are printed to the stdout.
+
+* [minDistanceBetween](relationsgraph.cc#L13) uses [Dijkstra](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)'s algorithm with a *Priority Queue* datastructure.
+
+* [allPathsShorterThan](relationsgraph.cc#L83) performs [Depth-First-Search](https://en.wikipedia.org/wiki/Depth-first_search) using recursion while keeping in memory the past visited nodes that will form the output path.
+
 Getting Started
 ---------------
 
