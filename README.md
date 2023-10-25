@@ -23,11 +23,11 @@ You can sign up for the C11Tester mailing list at:
 Added Functionality for Seminar Programming Languages CS4130 course, Matteo Meluzzi
 ----------------------------------------------------------------------------------- 
 
-Goals of this project:
+#### Goals of this project:
 * Compute minimum distance between two racy accesses in (hb + rf + sc) graph
 * Find all paths between two racy accesses with distance shorter than k in (hb + rf + sc) graph 
 
-Description of implementation:
+#### Description of implementation:
 
 For every execution, C11Tester constructs a (hb + rf + sc) [graph dynamically as the execution unrolls](execution.cc#L834). 
 * a *hb* edge is [added](execution.cc#L891) when an action *happens-before* the current action. This is checked using C11Tester's [clock vectors](clockvector.h).
@@ -40,6 +40,80 @@ When a [racy access is detected](datarace.cc#L213) the [minDistanceBetween](rela
 * [minDistanceBetween](relationsgraph.cc#L13) uses [Dijkstra](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)'s algorithm with a *Priority Queue* datastructure.
 
 * [allPathsShorterThan](relationsgraph.cc#L83) performs [Depth-First-Search](https://en.wikipedia.org/wiki/Depth-first_search) using recursion while keeping in memory the past visited nodes that will form the output path.
+
+#### Example output
+Program checked by C11Tester:
+```
+int x = 0;
+int y = 0;
+
+static void a(void *obj) {
+	x = 12;
+	printf("a exiting, x=%d\n", x);
+}
+
+static void b(void *obj) {
+	y = x;
+	printf("b exiting, x=%d\n", x);
+}
+
+int main(int argc, char **argv)
+{
+	thrd_t t1, t2;
+	thrd_create(&t1, (thrd_start_t)&a, NULL);
+	thrd_create(&t2, (thrd_start_t)&b, NULL);
+	thrd_join(t1);
+	thrd_join(t2);
+	return 0;
+}
+```
+C11Tester output:
+```
+Data race detected @ address 0000000000601060:
+    Access 1: write in thread  2 @ clock   3
+    Access 2:  read in thread  3 @ clock   5
+minimum distance between 3 (THREAD_START) and 5 (THREAD_START): 1
+
+all paths with distance less than 10:
+PATH 1: 3 (SEQUENTIAL_CONSISTENCY ->) 4 (HAPPENS_BEFORE ->) 5 
+PATH 2: 3 (SEQUENTIAL_CONSISTENCY ->) 4 (SEQUENTIAL_CONSISTENCY ->) 5 
+PATH 3: 3 (SEQUENTIAL_CONSISTENCY ->) 5 
+
+RELATIONS GRAPH of size 4:
+node with seq num 4 (THREAD_CREATE):
+         HAPPENS_BEFORE -> 5 (THREAD_START)
+         SEQUENTIAL_CONSISTENCY -> 5 (THREAD_START)
+
+node with seq num 3 (THREAD_START):
+         SEQUENTIAL_CONSISTENCY -> 4 (THREAD_CREATE)
+         SEQUENTIAL_CONSISTENCY -> 5 (THREAD_START)
+
+node with seq num 1 (THREAD_START):
+         HAPPENS_BEFORE -> 2 (THREAD_CREATE)
+         SEQUENTIAL_CONSISTENCY -> 2 (THREAD_CREATE)
+         HAPPENS_BEFORE -> 3 (THREAD_START)
+         SEQUENTIAL_CONSISTENCY -> 3 (THREAD_START)
+         HAPPENS_BEFORE -> 4 (THREAD_CREATE)
+         SEQUENTIAL_CONSISTENCY -> 4 (THREAD_CREATE)
+         HAPPENS_BEFORE -> 5 (THREAD_START)
+         SEQUENTIAL_CONSISTENCY -> 5 (THREAD_START)
+
+node with seq num 2 (THREAD_CREATE):
+         HAPPENS_BEFORE -> 3 (THREAD_START)
+         SEQUENTIAL_CONSISTENCY -> 3 (THREAD_START)
+         HAPPENS_BEFORE -> 4 (THREAD_CREATE)
+         SEQUENTIAL_CONSISTENCY -> 4 (THREAD_CREATE)
+         HAPPENS_BEFORE -> 5 (THREAD_START)
+         SEQUENTIAL_CONSISTENCY -> 5 (THREAD_START)
+
+Program output from execution 1:
+---- BEGIN PROGRAM OUTPUT ----
+a exiting, x=12
+b exiting, x=12
+---- END PROGRAM OUTPUT   ----
+```
+(hb + rf + sc) graph:
+![Test Graph](doc/test-graph.png)
 
 Getting Started
 ---------------
