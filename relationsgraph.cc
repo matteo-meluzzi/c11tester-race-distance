@@ -87,7 +87,7 @@ void RelationsGraph::allPathsShorterThanHelper(const RelationsGraphNode *from,
                                                 RelationGraphEdgeType followed_edge_type,
                                                 std::unordered_set<const RelationsGraphNode *> visited, 
                                                 std::vector<RelationsGraphPathComponent> current_path) const {
-    model_print("visiting node %d, current path size: %d\n", from->get_seq_number(), current_path.size());
+    // model_print("visiting node %d, current path size: %d\n", from->get_seq_number(), current_path.size());
     if (from == to) {
         current_path.push_back({from, followed_edge_type});
         result.push_back(current_path);

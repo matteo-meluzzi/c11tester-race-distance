@@ -840,7 +840,7 @@ ModelAction * ModelExecution::check_current_action(ModelAction *curr)
 
 	wake_up_sleeping_actions();
 
-	model_print("check_current_action: %d\n", curr->get_seq_number());
+	// model_print("check_current_action: %d\n", curr->get_seq_number());
 
 	SnapVector<ModelAction *> * rf_set = NULL;
 	bool canprune = false;
@@ -881,26 +881,19 @@ ModelAction * ModelExecution::check_current_action(ModelAction *curr)
 		process_mutex(curr);
 
 	// RELATIONS_GRAPH: add HAPPENS_BEFORE and SEQUENTIAL_CONSISTENCY edges considering the last action of all spawned threads
-	auto add_hb_sq_edges_to_relations_graph = [&](const SnapVector<Thread *> &threads) {
-		for (size_t i = 0; i < threads.size(); i++) {
-			auto thread = threads.at(i);
-			auto last_action = get_last_action(thread->get_id());
-			if (last_action == curr)
-				continue;
-			if (last_action == nullptr) {
-				continue;
-			}
+	for (auto sslaction = get_action_trace()->begin(); sslaction != nullptr; sslaction = sslaction->getNext()) {
+		auto action = sslaction->getVal();
 
-			if (last_action->happens_before(curr)) {
-				relations_graph.addEdge(last_action, RelationGraphEdge(HAPPENS_BEFORE, curr));
-			}
-			if (curr->is_seqcst() && last_action->is_seqcst()) {
-				relations_graph.addEdge(last_action, RelationGraphEdge(SEQUENTIAL_CONSISTENCY, curr));
-			}
+		if (action == curr)
+			continue;
+
+		if (action->happens_before(curr)) {
+			relations_graph.addEdge(action, RelationGraphEdge(HAPPENS_BEFORE, curr));
 		}
-	};
-	add_hb_sq_edges_to_relations_graph(thread_map);
-	add_hb_sq_edges_to_relations_graph(pthread_map);
+		if (curr->is_seqcst() && action->is_seqcst()) {
+			relations_graph.addEdge(action, RelationGraphEdge(SEQUENTIAL_CONSISTENCY, curr));
+		}
+	}
 
 	return curr;
 }
